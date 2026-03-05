@@ -33,6 +33,13 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
+      - name: Normalize image owner (lowercase)
+        id: owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
       - name: Resolve upstream codex ref
         id: ref
         shell: bash
@@ -63,7 +70,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          image="ghcr.io/${{ github.repository_owner }}/codex-docker"
+          image="ghcr.io/${{ steps.owner.outputs.owner }}/codex-docker"
           tag="${{ steps.ref.outputs.codex_ref }}"
           if docker buildx imagetools inspect "${image}:${tag}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
@@ -81,7 +88,7 @@ jobs:
           build-args: |
             CODEX_REF=${{ steps.ref.outputs.codex_ref }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/codex-docker:${{ steps.ref.outputs.codex_ref }}
-            ghcr.io/${{ github.repository_owner }}/codex-docker:latest
+            ghcr.io/${{ steps.owner.outputs.owner }}/codex-docker:${{ steps.ref.outputs.codex_ref }}
+            ghcr.io/${{ steps.owner.outputs.owner }}/codex-docker:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
