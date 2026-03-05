@@ -2,8 +2,8 @@ name: build-and-push-ghcr
 
 on:
   schedule:
-    # 每小时检查一次上游 Release（GitHub schedule 使用 UTC）
-    - cron: "17 * * * *"
+    # 每 30 分钟检查一次上游 Release（GitHub schedule 使用 UTC，触发时间为 best-effort）
+    - cron: "*/30 * * * *"
   workflow_dispatch:
     inputs:
       codex_ref:
@@ -85,4 +85,3 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/codex-docker:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-

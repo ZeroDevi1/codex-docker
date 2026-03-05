@@ -7,13 +7,13 @@
 拉取镜像（将 `ZeroDevi1` 替换成你的 GitHub 用户名/组织名）：
 
 ```bash
-docker pull ghcr.io/zerodevi1/codex-docker:latest
+docker pull ghcr.io/<owner>/codex-docker:latest
 ```
 
 启动服务示例：
 
 ```bash
-docker run --rm -p 5000:5000 ghcr.io/zerodevi1/codex-docker:latest
+docker run --rm -p 5000:5000 ghcr.io/<owner>/codex-docker:latest
 ```
 
 默认命令：
@@ -27,7 +27,7 @@ codex serve --host 0.0.0.0 --port 5000
 由于 GitHub Actions 的 `release` 事件只能监听“本仓库”的 Release，本仓库采用定时任务轮询上游 `stellarlinkco/codex` 的 `latest release tag`：
 
 - Workflow：`.github/workflows/build-and-push-ghcr.yml`
-- 逻辑：每小时检查一次上游 latest release tag；若 GHCR 已存在同名 tag 则跳过，否则构建并推送
+- 逻辑：每 30 分钟检查一次上游 latest release tag；若 GHCR 已存在同名 tag 则跳过，否则构建并推送
 - 你也可以在 GitHub Actions 页面手动触发，并通过 `codex_ref` 输入框指定任意上游 tag/ref 进行构建
 
 镜像 tag 规则：
@@ -44,4 +44,3 @@ codex serve --host 0.0.0.0 --port 5000
 ## 参考与致谢
 
 - 上游项目：[`stellarlinkco/codex`](https://github.com/stellarlinkco/codex)（本镜像通过其 `scripts/install.sh` 安装 Codex）
-
