@@ -27,7 +27,7 @@ codex serve --host 0.0.0.0 --port 5000
 由于 GitHub Actions 的 `release` 事件只能监听“本仓库”的 Release，本仓库采用定时任务轮询上游 `stellarlinkco/codex` 的 `latest release tag`：
 
 - Workflow：`.github/workflows/build-and-push-ghcr.yml`
-- 逻辑：每 30 分钟检查一次上游 latest release tag；若 GHCR 已存在同名 tag 则跳过，否则构建并推送
+- 逻辑：每天检查一次上游 latest release tag；若 GHCR 已存在同名 tag 则跳过，否则构建并推送
 - 你也可以在 GitHub Actions 页面手动触发，并通过 `codex_ref` 输入框指定任意上游 tag/ref 进行构建
 - 当前默认仅构建 `linux/amd64`（如需 `linux/arm64` 可再加回 platforms）
 

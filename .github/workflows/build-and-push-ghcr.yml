@@ -2,8 +2,9 @@ name: build-and-push-ghcr
 
 on:
   schedule:
-    # 每 30 分钟检查一次上游 Release（GitHub schedule 使用 UTC，触发时间为 best-effort）
-    - cron: "*/30 * * * *"
+    # 每天检查一次上游 Release（GitHub schedule 使用 UTC，触发时间为 best-effort）
+    # 01:17 UTC = 09:17 Asia/Shanghai
+    - cron: "17 1 * * *"
   workflow_dispatch:
     inputs:
       codex_ref:
