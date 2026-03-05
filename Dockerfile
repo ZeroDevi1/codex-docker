@@ -15,11 +15,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg openssh-client \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# [统一包管理] 安装 Version-Fox (vfox)
+# 注意：多架构构建（buildx + qemu）场景下，Docker build 过程中以非 root 用户执行 sudo 可能失败（nosuid）。
+# 因此这里在 root 阶段直接完成 vfox 的 apt 安装，后续再切到 devuser 使用 vfox。
+RUN set -eux; \
+    echo "deb [trusted=yes lang=none] https://apt.fury.io/versionfox/ /" > /etc/apt/sources.list.d/versionfox.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends vfox; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*
+
 # 2. 预创建标准的开发用户 (UID 1000)
 # 针对 Ubuntu 24.04 的特性，先删除默认占用 1000 ID 的 ubuntu 用户
-RUN userdel -r ubuntu && \
+RUN (id -u ubuntu >/dev/null 2>&1 && userdel -r ubuntu) || true && \
     groupadd -g 1000 devgroup && \
-    useradd -u 1000 -g 10 -m -s /bin/bash devuser && \
+    useradd -u 1000 -g 1000 -m -s /bin/bash devuser && \
     echo "devuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # 3. 切换至开发用户，安装所有的开发 SDK 和工具链
@@ -41,18 +51,15 @@ ENV UV_SYSTEM_PYTHON=1
 RUN curl -fsSL https://qlty.sh | sh
 ENV PATH="/home/devuser/.qlty/bin:${PATH}"
 
-# [统一包管理] 安装 Version-Fox (vfox)
-RUN echo "deb [trusted=yes lang=none] https://apt.fury.io/versionfox/ /" | sudo tee /etc/apt/sources.list.d/versionfox.list \
-    && sudo apt-get update \
-    && sudo apt-get install vfox -y \
-    && echo 'eval "$(vfox activate bash)"' >> /home/devuser/.bashrc
+# vfox 已在 root 阶段安装；这里仅写入激活命令
+RUN echo 'eval "$(vfox activate bash)"' >> /home/devuser/.bashrc
 
 # 配置 vfox 插件并安装 Java / Node.js
 # 注意：vfox 需要在 bash 环境下激活才能执行 install
 RUN bash -c "eval \"\$(vfox activate bash)\" && \
     vfox add java && \
     vfox add nodejs && \
-    vfox install java@21.0.1&& \
+    vfox install java@21.0.1 && \
     vfox install java@8.0.332 && \
     vfox use -g java@21.0.1+12 && \
     vfox install nodejs@22.14.0 && \
