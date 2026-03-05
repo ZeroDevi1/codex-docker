@@ -53,4 +53,5 @@ fi
 
 # 5. 降权启动目标程序
 echo "Starting application..."
-exec gosu devuser "$@"
+# 以 login shell 启动，确保 /etc/profile.d 与用户 profile 生效（vfox 等环境变量需要）
+exec gosu devuser bash -lc 'exec "$@"' -- "$@"

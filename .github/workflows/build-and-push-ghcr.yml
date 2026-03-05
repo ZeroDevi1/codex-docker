@@ -68,6 +68,7 @@ jobs:
 
       - name: Check if image tag already exists
         id: exists
+        if: github.event_name == 'schedule'
         shell: bash
         run: |
           set -euo pipefail
@@ -80,7 +81,7 @@ jobs:
           fi
 
       - name: Build & Push
-        if: steps.exists.outputs.exists != 'true'
+        if: github.event_name != 'schedule' || steps.exists.outputs.exists != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .

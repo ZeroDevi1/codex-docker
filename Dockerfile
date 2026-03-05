@@ -25,6 +25,12 @@ RUN set -eux; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*
 
+# 让 vfox 在容器运行时也生效（entrypoint 用 bash -lc 执行，会读取 /etc/profile.d）
+RUN set -eux; \
+    mkdir -p /etc/profile.d; \
+    printf '%s\n' 'eval "$(vfox activate bash)"' > /etc/profile.d/vfox.sh; \
+    chmod 0644 /etc/profile.d/vfox.sh
+
 # 2. 预创建标准的开发用户 (UID 1000)
 # 针对 Ubuntu 24.04 的特性，先删除默认占用 1000 ID 的 ubuntu 用户
 RUN (id -u ubuntu >/dev/null 2>&1 && userdel -r ubuntu) || true && \
@@ -52,7 +58,8 @@ RUN curl -fsSL https://qlty.sh | sh
 ENV PATH="/home/devuser/.qlty/bin:${PATH}"
 
 # vfox 已在 root 阶段安装；这里仅写入激活命令
-RUN echo 'eval "$(vfox activate bash)"' >> /home/devuser/.bashrc
+RUN echo 'eval "$(vfox activate bash)"' >> /home/devuser/.bashrc \
+    && echo 'eval "$(vfox activate bash)"' >> /home/devuser/.profile
 
 # 配置 vfox 插件并安装 Java / Node.js
 # 注意：vfox 需要在 bash 环境下激活才能执行 install

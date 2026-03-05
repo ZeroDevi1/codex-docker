@@ -28,6 +28,7 @@ codex serve --host 0.0.0.0 --port 5000
 
 - Workflow：`.github/workflows/build-and-push-ghcr.yml`
 - 逻辑：每天检查一次上游 latest release tag；若 GHCR 已存在同名 tag 则跳过，否则构建并推送
+- 推送触发（本仓库手动更新）：每次 `push` 都会构建并推送（不做“tag 已存在”跳过判断）
 - 你也可以在 GitHub Actions 页面手动触发，并通过 `codex_ref` 输入框指定任意上游 tag/ref 进行构建
 - 当前默认仅构建 `linux/amd64`（如需 `linux/arm64` 可再加回 platforms）
 
