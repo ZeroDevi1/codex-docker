@@ -79,28 +79,11 @@ RUN bash -c "eval \"\$(vfox activate bash)\" && \
     corepack prepare pnpm@latest --activate && \
     npm install -g ace-tool"
 
-# 4. 切回 root 安装全局 Codex 及 Entrypoint
-# 切回 root 安装全局 Codex 及 Entrypoint
+# 4. 切回 root 安装全局 Codex（默认跟随上游最新 Release）
 USER root
 ENV INSTALL_DIR=/usr/local/bin
 
-# Codex 安装：默认使用上游 main；在 CI 中通过 CODEX_REF 注入 Release tag（例如 v1.2.2）
-# ARG CODEX_REF=main
-# ENV CODEX_REF=${CODEX_REF}
-# RUN set -eux; \
-#     url="https://raw.githubusercontent.com/stellarlinkco/codex/${CODEX_REF}/scripts/install.sh"; \
-#     if ! curl -fsSL "$url" -o /tmp/codex-install.sh; then \
-#       echo "WARN: 未找到 $url，回退到 main"; \
-#       curl -fsSL "https://raw.githubusercontent.com/stellarlinkco/codex/main/scripts/install.sh" -o /tmp/codex-install.sh; \
-#     fi; \
-#     bash /tmp/codex-install.sh; \
-#     rm -f /tmp/codex-install.sh
-
-# 4. 切回 root 安装全局 Codex (绕过上游缺陷脚本，精准拉取 GNU 版本)
-USER root
-ENV INSTALL_DIR=/usr/local/bin
-
-ARG CODEX_REF=main
+ARG CODEX_REF=
 ENV CODEX_REF=${CODEX_REF}
 
 RUN set -eux; \
@@ -109,18 +92,34 @@ RUN set -eux; \
     if [ "$ARCH" = "x86_64" ]; then TARGET="x86_64-unknown-linux-gnu"; \
     elif [ "$ARCH" = "aarch64" ]; then TARGET="aarch64-unknown-linux-gnu"; \
     else echo "Unsupported arch: $ARCH" && exit 1; fi; \
+    download() { \
+        curl --fail --show-error --silent --location \
+            --retry 8 \
+            --retry-delay 2 \
+            --retry-max-time 120 \
+            --retry-all-errors \
+            "$1" -o "$2"; \
+    }; \
+    RESOLVED_REF="$CODEX_REF"; \
+    if [ -z "$RESOLVED_REF" ]; then \
+        RESOLVED_REF="$(curl --fail --show-error --silent --location \
+            --retry 8 \
+            --retry-delay 2 \
+            --retry-max-time 120 \
+            --retry-all-errors \
+            https://api.github.com/repos/stellarlinkco/codex/releases/latest | \
+            python3 -c 'import json, sys; print(json.load(sys.stdin)[\"tag_name\"])')"; \
+    fi; \
     \
     # 拼接精确的 Release 下载地址
-    url="https://github.com/stellarlinkco/codex/releases/download/${CODEX_REF}/codex-${TARGET}"; \
+    url="https://github.com/stellarlinkco/codex/releases/download/${RESOLVED_REF}/codex-${TARGET}"; \
+    latest_url="https://github.com/stellarlinkco/codex/releases/latest/download/codex-${TARGET}"; \
     echo "Downloading ${url} ..."; \
-    if ! curl -fsSL "$url" -o /usr/local/bin/codex; then \
-        echo "WARN: 未找到特定版本，回退拉取 latest ..."; \
-        curl -fsSL "https://github.com/stellarlinkco/codex/releases/latest/download/codex-${TARGET}" -o /usr/local/bin/codex; \
+    if ! download "$url" /usr/local/bin/codex; then \
+        echo "WARN: 指定版本 ${RESOLVED_REF} 下载失败，回退拉取 latest ..."; \
+        download "$latest_url" /usr/local/bin/codex; \
     fi; \
     chmod +x /usr/local/bin/codex
-
-# 确保不会有多余的 libc 冲突包被误安装
-# RUN apt-get install -y dos2unix ... (保留你原有的 dos2unix 安装和 entrypoint 设置)
 
 # 【新增】安装 dos2unix 工具
 RUN apt-get update && apt-get install -y dos2unix && apt-get clean

@@ -28,8 +28,8 @@ codex serve --host 0.0.0.0 --port 5000
 
 - Workflow：`.github/workflows/build-and-push-ghcr.yml`
 - 逻辑：每天检查一次上游 latest release tag；若 GHCR 已存在同名 tag 则跳过，否则构建并推送
-- 推送触发（本仓库手动更新）：每次 `push` 都会构建并推送（不做“tag 已存在”跳过判断）
-- 你也可以在 GitHub Actions 页面手动触发，并通过 `codex_ref` 输入框指定任意上游 tag/ref 进行构建
+- 推送触发（本仓库手动更新）：每次 `push` 都会重新构建并推送（不做“tag 已存在”跳过判断）
+- 你也可以在 GitHub Actions 页面手动触发；手动触发同样始终构建当前上游 latest release
 - 当前默认仅构建 `linux/amd64`（如需 `linux/arm64` 可再加回 platforms）
 
 镜像 tag 规则：
@@ -45,4 +45,4 @@ codex serve --host 0.0.0.0 --port 5000
 
 ## 参考与致谢
 
-- 上游项目：[`stellarlinkco/codex`](https://github.com/stellarlinkco/codex)（本镜像通过其 `scripts/install.sh` 安装 Codex）
+- 上游项目：[`stellarlinkco/codex`](https://github.com/stellarlinkco/codex)（本镜像默认拉取其最新 Release 二进制安装 Codex）
