@@ -46,6 +46,12 @@ RUN (id -u ubuntu >/dev/null 2>&1 && userdel -r ubuntu) || true && \
 USER devuser
 WORKDIR /home/devuser
 
+RUN mkdir -p "${VFOX_HOME}" \
+    "${VFOX_HOME}/plugin" \
+    "${VFOX_HOME}/cache" \
+    "${VFOX_HOME}/sdks" \
+    "${VFOX_HOME}/tmp"
+
 # [Rust] 安装 Rust + Cargo (Rust 官方工具链最稳)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/home/devuser/.cargo/bin:${PATH}"
