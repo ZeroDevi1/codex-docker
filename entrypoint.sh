@@ -1,6 +1,38 @@
 #!/bin/bash
 set -e
 
+bootstrap_vfox_node() {
+    local node_version="${VFOX_NODE_VERSION:-22.14.0}"
+    local npm_packages="${VFOX_GLOBAL_NPM_PACKAGES:-ace-tool @upstash/context7-mcp}"
+
+    echo "Bootstrapping shared vfox toolchain..."
+    gosu devuser bash -lc "
+        set -e
+        eval \"\$(vfox activate bash)\"
+
+        vfox add nodejs >/dev/null 2>&1 || true
+
+        if ! vfox list nodejs 2>/dev/null | grep -q \"${node_version}\"; then
+            vfox install nodejs@${node_version}
+        fi
+
+        vfox use -g nodejs@${node_version}
+        vfox use nodejs@${node_version}
+        hash -r
+
+        corepack enable >/dev/null 2>&1 || true
+
+        for pkg in ${npm_packages}; do
+            if ! npm list -g --depth=0 \"\$pkg\" >/dev/null 2>&1; then
+                npm install -g \"\$pkg\"
+            fi
+        done
+
+        command -v node >/dev/null
+        command -v npm >/dev/null
+    "
+}
+
 # 1. 动态设置时区 (TZ)
 if [ ! -z "$TZ" ]; then
     ln -snf "/usr/share/zoneinfo/$TZ" /etc/localtime
@@ -50,6 +82,15 @@ fi
 if [ -d "/workspace" ]; then
     chown devuser:devgroup /workspace
 fi
+
+mkdir -p /home/devuser/.version-fox
+chown -R devuser:devgroup /home/devuser/.version-fox
+if [ ! -e /home/devuser/.vfox ]; then
+    ln -s /home/devuser/.version-fox /home/devuser/.vfox
+fi
+chown -h devuser:devgroup /home/devuser/.vfox 2>/dev/null || true
+
+bootstrap_vfox_node
 
 # 5. 降权启动目标程序
 echo "Starting application..."

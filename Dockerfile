@@ -2,6 +2,9 @@ FROM ubuntu:24.04
 
 # 1. 基础环境及权限工具 (提权执行)
 ENV DEBIAN_FRONTEND=noninteractive
+ENV VFOX_HOME=/home/devuser/.version-fox
+ENV VFOX_NODE_VERSION=22.14.0
+ENV VFOX_GLOBAL_NPM_PACKAGES="ace-tool @upstash/context7-mcp"
 
 # 【优化 1】替换为清华大学/阿里云的国内源 (针对 Ubuntu 24.04 DEB822 格式)
 RUN sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list.d/ubuntu.sources \
@@ -29,7 +32,7 @@ RUN set -eux; \
 # 让 vfox 在容器运行时也生效（entrypoint 用 bash -lc 执行，会读取 /etc/profile.d）
 RUN set -eux; \
     mkdir -p /etc/profile.d; \
-    printf '%s\n' 'eval "$(vfox activate bash)"' > /etc/profile.d/vfox.sh; \
+    printf '%s\n' 'export VFOX_HOME=/home/devuser/.version-fox' 'eval "$(vfox activate bash)"' > /etc/profile.d/vfox.sh; \
     chmod 0644 /etc/profile.d/vfox.sh
 
 # 2. 预创建标准的开发用户 (UID 1000)
@@ -60,7 +63,11 @@ ENV PATH="/home/devuser/.qlty/bin:${PATH}"
 
 # vfox 已在 root 阶段安装；这里仅写入激活命令
 RUN echo 'eval "$(vfox activate bash)"' >> /home/devuser/.bashrc \
-    && echo 'eval "$(vfox activate bash)"' >> /home/devuser/.profile
+    && echo 'eval "$(vfox activate bash)"' >> /home/devuser/.profile \
+    && printf '%s\n' 'export VFOX_HOME=/home/devuser/.version-fox' | cat - /home/devuser/.bashrc > /home/devuser/.bashrc.tmp \
+    && mv /home/devuser/.bashrc.tmp /home/devuser/.bashrc \
+    && printf '%s\n' 'export VFOX_HOME=/home/devuser/.version-fox' | cat - /home/devuser/.profile > /home/devuser/.profile.tmp \
+    && mv /home/devuser/.profile.tmp /home/devuser/.profile
 
 # 配置 vfox 插件并安装 Java / Node.js
 # 注意：vfox 需要在 bash 环境下激活才能执行 install
@@ -71,13 +78,14 @@ RUN bash -c "eval \"\$(vfox activate bash)\" && \
     vfox install java@8.0.332 && \
     vfox use -g java@21.0.1+12 && \
     vfox install nodejs@22.14.0 && \
-    vfox use -g nodejs@22.14.0"
+    vfox use -g nodejs@22.14.0 && \
+    vfox use nodejs@22.14.0"
 
 # [Node 辅助与全局工具] 启用 corepack 并安装业务所需的全局 CLI
 RUN bash -c "eval \"\$(vfox activate bash)\" && \
     corepack enable && \
     corepack prepare pnpm@latest --activate && \
-    npm install -g ace-tool"
+    npm install -g ace-tool @upstash/context7-mcp"
 
 # 4. 切回 root 安装全局 Codex（默认跟随上游最新 Release）
 USER root

@@ -22,6 +22,27 @@ docker run --rm -p 5000:5000 ghcr.io/<owner>/codex-docker:latest
 codex serve --host 0.0.0.0 --port 5000
 ```
 
+## 共享 vfox 与 MCP
+
+镜像显式使用 `/home/devuser/.version-fox` 作为 `VFOX_HOME`，方便与其他容器共享同一份 Node/Java 运行时缓存。为兼容已有工具，还会创建 `/home/devuser/.vfox -> /home/devuser/.version-fox` 的软链接。
+
+容器启动时会自动检查并补齐：
+
+- `nodejs@22.14.0`
+- 全局 npm 包 `ace-tool`
+- 全局 npm 包 `@upstash/context7-mcp`
+
+如果你在 Codex 配置里启用了 MCP，推荐直接调用全局命令，并为 `context7` 提高启动超时，例如：
+
+```toml
+[mcp_servers.ace-tool]
+command = "ace-tool"
+
+[mcp_servers.context7]
+command = "context7-mcp"
+startup_timeout_sec = 30
+```
+
 ## 自动构建（跟随上游 Release）
 
 由于 GitHub Actions 的 `release` 事件只能监听“本仓库”的 Release，本仓库采用定时任务轮询上游 `stellarlinkco/codex` 的 `latest release tag`：
